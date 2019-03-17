@@ -4,6 +4,7 @@
 ## 사용 방법
 django app 폴더 내의 tests.py 파일을 여기 있는거로 교체하고 `python 
 ./manage.py test`를 실행하면 됩니다.
+![tests.py 위치](https://github.com/ldm2468/swpp2019-hw1-tests/raw/master/directory-structure.png)
 
 ## Troubleshooting
 에러가 생겼다면 tests.py 소스코드를 확인해서 어느 부분이 잘못되었는지 
