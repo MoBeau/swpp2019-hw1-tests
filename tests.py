@@ -136,8 +136,8 @@ class 여러가지테스트(APITestCase):
     def put_expect_success(self, id, since, til):
         prev = self.client.get('/meetings/').data
         resp = self.put_meeting(id, since, til)
-        self.assertEqual(resp.data['id'], id)
         self.check_meeting_success(resp, since, til, self.user.id)
+        self.assertEqual(resp.data['id'], id)
         curr = self.client.get('/meetings/').data
         for meeting in prev:
             if meeting['id'] != id:
