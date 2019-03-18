@@ -114,43 +114,58 @@ class 여러가지테스트(APITestCase):
 
     def check_delete_failure(self, response, id):
         self.assertTrue(status.is_client_error(response.status_code))
-        response = self.client.get('/meetings/')
-        for meeting in response.data:
-            if meeting['id'] == id:
-                return
-        self.fail()
 
 
     # Shorthand functions
     def post_expect_success(self, since, til):
+        prev = self.client.get('/meetings/').data
         resp = self.post_meeting(since, til)
         self.check_meeting_success(resp, since, til, self.user.id)
+        curr = self.client.get('/meetings/').data
+        for meeting in prev:
+            self.assertIn(meeting, curr)
         return resp
 
     def post_expect_failure(self, since, til):
+        all = self.client.get('/meetings/')
         resp = self.post_meeting(since, til)
         self.check_meeting_failure(resp)
+        self.assertEqual(all.data, self.client.get('/meetings/').data)
         return resp
 
     def put_expect_success(self, id, since, til):
+        prev = self.client.get('/meetings/').data
         resp = self.put_meeting(id, since, til)
         self.assertEqual(resp.data['id'], id)
         self.check_meeting_success(resp, since, til, self.user.id)
+        curr = self.client.get('/meetings/').data
+        for meeting in prev:
+            if meeting['id'] != id:
+                self.assertIn(meeting, curr)
         return resp
 
     def put_expect_failure(self, id, since, til):
+        all = self.client.get('/meetings/')
         resp = self.put_meeting(id, since, til)
         self.check_meeting_failure(resp)
+        self.assertEqual(all.data, self.client.get('/meetings/').data)
         return resp
 
     def delete_expect_success(self, id):
+        prev = self.client.get('/meetings/').data
         resp = self.delete_meeting(id)
         self.check_delete_success(resp, id)
+        curr = self.client.get('/meetings/').data
+        for meeting in prev:
+            if meeting['id'] != id:
+                self.assertIn(meeting, curr)
         return resp
 
     def delete_expect_failure(self, id):
+        all = self.client.get('/meetings/')
         resp = self.delete_meeting(id)
         self.check_delete_failure(resp, id)
+        self.assertEqual(all.data, self.client.get('/meetings/').data)
         return resp
 
 
@@ -185,6 +200,7 @@ class 여러가지테스트(APITestCase):
 
         # wrong order
         self.post_expect_failure(2, 1)
+        self.post_expect_failure(1, 1)
 
         response2 = self.post_expect_success(4, 6)
         response3 = self.post_expect_success(8, 9)
@@ -238,6 +254,7 @@ class 여러가지테스트(APITestCase):
 
         # wrong order
         self.put_expect_failure(id, 6, 5)
+        self.put_expect_failure(id, 6, 6)
 
         self.put_expect_success(id, 3, 8)
         self.put_expect_success(id, 2, 7)
@@ -253,29 +270,30 @@ class 여러가지테스트(APITestCase):
 
     def test_users(self):
         resp = [[], []]
+
         login = self.client_login(0)
+        to_delete = self.post_expect_success(10, 11).data['id']
         resp[0] = [
             self.post_expect_success(1, 2),
             self.post_expect_success(3, 4),
             self.post_expect_success(5, 6)
         ]
+        self.delete_expect_success(to_delete)
         self.client.logout()
 
         login = self.client_login(1)
+        to_delete = self.post_expect_success(10, 11).data['id']
         resp[1] = [
             self.post_expect_success(2, 3),
             self.post_expect_success(4, 5),
             self.post_expect_success(6, 7)
         ]
+        self.delete_expect_success(to_delete)
         self.client.logout()
 
         # Test /users/ - account for possible order differences
         all = self.client.get("/users/")
         self.assertEqual(len(all.data), 2)
-        # Account for capitalization differences
-        meetings_key = 'meetings'
-        if 'Meetings' in all.data[0]:
-            meetings_key = 'Meetings'
 
         for userdat in all.data:
             for i in [0, 1]:
@@ -285,7 +303,7 @@ class 여러가지테스트(APITestCase):
                         self.users[i].username
                     )
                     self.assertSequenceEqual(
-                        userdat[meetings_key],
+                        userdat['meetings'],
                         [x.data['id'] for x in resp[i]]
                     )
 
