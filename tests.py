@@ -16,6 +16,7 @@
 from datetime import datetime, timedelta, timezone
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from rest_framework.fields import DateTimeField
 from rest_framework.test import APITestCase
 from rest_framework import status
 
@@ -58,7 +59,7 @@ class 여러가지테스트(APITestCase):
 
     def check_time(self, iso, t):
         # Compare equality of iso 8601 formatted string and datetime
-        self.assertEqual(datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S%z"), t)
+        self.assertEqual(DateTimeField().to_internal_value(iso), t)
 
     def meeting(self, since, til):
         # Assemble a meeting object
